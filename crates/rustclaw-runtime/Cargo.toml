@@ -1,0 +1,46 @@
+[package]
+name = "rustclaw-runtime"
+version = "0.1.0"
+edition = "2021"
+description = "Agent runtime engine for RustClaw"
+
+[dependencies]
+rustclaw-core = { path = "../rustclaw-core" }
+rustclaw-memory = { path = "../rustclaw-memory" }
+rustclaw-tools = { path = "../rustclaw-tools" }
+
+# Async
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+futures = { workspace = true }
+async-trait = { workspace = true }
+
+# HTTP Client
+reqwest = { workspace = true }
+reqwest-eventsource = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Time
+chrono = { workspace = true }
+
+# UUID
+uuid = { workspace = true }
+
+# Random
+rand = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Concurrency
+parking_lot = { workspace = true }
+
+# OpenAI API
+openai-api-rs = { workspace = true }
