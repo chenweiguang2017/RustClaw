@@ -1,0 +1,38 @@
+[package]
+name = "rustclaw-core"
+version = "0.1.0"
+edition = "2021"
+description = "Core types, traits, and utilities for RustClaw"
+
+[dependencies]
+# Async
+tokio = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Time
+chrono = { workspace = true }
+
+# UUID
+uuid = { workspace = true }
+
+# Random
+rand = { workspace = true }
+
+# Concurrency
+parking_lot = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Utilities
+once_cell = { workspace = true }
+bytes = { workspace = true }
