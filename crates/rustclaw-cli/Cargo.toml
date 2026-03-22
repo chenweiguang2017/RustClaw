@@ -1,0 +1,48 @@
+[package]
+name = "rustclaw-cli"
+version = "0.1.0"
+edition = "2021"
+description = "CLI for RustClaw - compatible with OpenClaw commands"
+
+[dependencies]
+rustclaw-core = { path = "../rustclaw-core" }
+rustclaw-gateway = { path = "../rustclaw-gateway" }
+rustclaw-runtime = { path = "../rustclaw-runtime" }
+rustclaw-plugins = { path = "../rustclaw-plugins" }
+rustclaw-tools = { path = "../rustclaw-tools" }
+rustclaw-memory = { path = "../rustclaw-memory" }
+
+# Async
+tokio = { workspace = true }
+
+# CLI
+clap = { workspace = true }
+clap_complete = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# Configuration
+config = { workspace = true }
+dotenvy = { workspace = true }
+
+# Time
+chrono = { workspace = true }
+
+# Terminal
+colored = "2.1"
+indicatif = "0.17"
+dialoguer = "0.11"
+
+# UUID
+uuid = { workspace = true }
