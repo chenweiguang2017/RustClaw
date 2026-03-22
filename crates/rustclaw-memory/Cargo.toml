@@ -1,0 +1,37 @@
+[package]
+name = "rustclaw-memory"
+version = "0.1.0"
+edition = "2021"
+description = "Memory system for RustClaw - SOUL.md, AGENTS.md, context management"
+
+[dependencies]
+rustclaw-core = { path = "../rustclaw-core" }
+
+# Async
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Markdown
+pulldown-cmark = { workspace = true }
+markdown = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Time
+chrono = { workspace = true }
+
+# UUID
+uuid = { workspace = true }
+
+# File system
+walkdir = "2.4"
+glob = "0.3"
