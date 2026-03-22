@@ -1,0 +1,45 @@
+[package]
+name = "rustclaw-gateway"
+version = "0.1.0"
+edition = "2021"
+description = "Gateway server for RustClaw - WebSocket and HTTP API"
+
+[dependencies]
+rustclaw-core = { path = "../rustclaw-core" }
+
+# Async
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+tokio-stream = { workspace = true }
+futures = { workspace = true }
+async-trait = { workspace = true }
+
+# Web
+axum = { workspace = true }
+axum-extra = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+hyper = { workspace = true }
+
+# WebSocket
+tokio-tungstenite = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Time
+chrono = { workspace = true }
+
+# UUID
+uuid = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Concurrency
+parking_lot = { workspace = true }
