@@ -1,0 +1,34 @@
+[package]
+name = "rustclaw-plugins"
+version = "0.1.0"
+edition = "2021"
+description = "Plugin system for RustClaw - compatible with OpenClaw plugins"
+
+[dependencies]
+rustclaw-core = { path = "../rustclaw-core" }
+
+# Async
+tokio = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Deno runtime for TypeScript plugins
+deno_core = { workspace = true }
+deno_runtime = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Concurrency
+parking_lot = { workspace = true }
+
+# UUID
+uuid = { workspace = true }
