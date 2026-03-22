@@ -1,116 +1,313 @@
-//! Plugin types for RustClaw
+//! Core types for RustClaw
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// Plugin information
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PluginInfo {
-    /// Plugin name
-    pub name: String,
-    /// Plugin version
-    pub version: String,
-    /// Plugin description
-    pub description: Option<String>,
-    /// Plugin author
-    pub author: Option<String>,
-    /// Plugin entry point
-    pub entry: String,
-    /// Plugin type
-    #[serde(rename = "type")]
-    pub plugin_type: PluginType,
-    /// Plugin dependencies
-    #[serde(default)]
-    pub dependencies: Vec<String>,
-    /// Plugin configuration schema
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub config_schema: Option<serde_json::Value>,
+/// Agent identifier
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct AgentId(pub String);
+
+impl Default for AgentId {
+    fn default() -> Self {
+        Self(uuid::Uuid::new_v4().to_string())
+    }
 }
 
-/// Plugin type
+impl From<&str> for AgentId {
+    fn from(s: &str) -> Self {
+        Self(s.to_string())
+    }
+}
+
+impl std::fmt::Display for AgentId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+/// Session identifier
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct SessionId(pub String);
+
+impl Default for SessionId {
+    fn default() -> Self {
+        Self(uuid::Uuid::new_v4().to_string())
+    }
+}
+
+impl From<&str> for SessionId {
+    fn from(s: &str) -> Self {
+        Self(s.to_string())
+    }
+}
+
+impl std::fmt::Display for SessionId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+/// Tool identifier
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct ToolId(pub String);
+
+impl From<&str> for ToolId {
+    fn from(s: &str) -> Self {
+        Self(s.to_string())
+    }
+}
+
+impl std::fmt::Display for ToolId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+/// LLM Provider types
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
-pub enum PluginType {
-    /// Native Rust plugin
-    Native,
-    /// TypeScript plugin (OpenClaw compatible)
-    TypeScript,
-    /// Python plugin
-    Python,
+pub enum LlmProvider {
+    OpenAI,
+    Anthropic,
+    Azure,
+    Local,
+    Custom(String),
 }
 
-/// Plugin instance
-#[derive(Debug)]
-pub struct Plugin {
-    /// Plugin info
-    pub info: PluginInfo,
-    /// Plugin state
-    pub state: PluginState,
-    /// Plugin configuration
+impl Default for LlmProvider {
+    fn default() -> Self {
+        Self::OpenAI
+    }
+}
+
+impl std::fmt::Display for LlmProvider {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::OpenAI => write!(f, "openai"),
+            Self::Anthropic => write!(f, "anthropic"),
+            Self::Azure => write!(f, "azure"),
+            Self::Local => write!(f, "local"),
+            Self::Custom(name) => write!(f, "{}", name),
+        }
+    }
+}
+
+/// LLM Model configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ModelConfig {
+    pub provider: LlmProvider,
+    pub model_name: String,
+    pub api_key: Option<String>,
+    pub base_url: Option<String>,
+    pub temperature: f32,
+    pub max_tokens: Option<u32>,
+    pub top_p: Option<f32>,
+    pub frequency_penalty: Option<f32>,
+    pub presence_penalty: Option<f32>,
+}
+
+impl Default for ModelConfig {
+    fn default() -> Self {
+        Self {
+            provider: LlmProvider::OpenAI,
+            model_name: "gpt-4".to_string(),
+            api_key: None,
+            base_url: None,
+            temperature: 0.7,
+            max_tokens: Some(4096),
+            top_p: Some(1.0),
+            frequency_penalty: None,
+            presence_penalty: None,
+        }
+    }
+}
+
+/// Rate limiting configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RateLimitConfig {
+    /// Requests per minute (RPM)
+    pub rpm: Option<u32>,
+    /// Minimum interval between requests in milliseconds
+    pub min_interval_ms: Option<u64>,
+    /// Maximum interval between requests in milliseconds (for random range)
+    pub max_interval_ms: Option<u64>,
+    /// Whether to use random interval within range
+    pub use_random_interval: bool,
+}
+
+impl Default for RateLimitConfig {
+    fn default() -> Self {
+        Self {
+            rpm: Some(60), // Default 60 RPM
+            min_interval_ms: None,
+            max_interval_ms: None,
+            use_random_interval: false,
+        }
+    }
+}
+
+impl RateLimitConfig {
+    /// Calculate the interval between requests based on RPM
+    pub fn interval_from_rpm(&self) -> u64 {
+        if let Some(rpm) = self.rpm {
+            60000 / rpm as u64 // milliseconds per request
+        } else if let Some(min) = self.min_interval_ms {
+            if self.use_random_interval {
+                if let Some(max) = self.max_interval_ms {
+                    use rand::Rng;
+                    let mut rng = rand::thread_rng();
+                    rng.gen_range(min..=max)
+                } else {
+                    min
+                }
+            } else {
+                min
+            }
+        } else {
+            1000 // Default 1 second
+        }
+    }
+}
+
+/// Concurrency configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConcurrencyConfig {
+    /// Maximum concurrent API requests
+    pub max_concurrent_requests: usize,
+    /// Maximum concurrent tool executions
+    pub max_concurrent_tools: usize,
+    /// Maximum concurrent sessions
+    pub max_concurrent_sessions: usize,
+}
+
+impl Default for ConcurrencyConfig {
+    fn default() -> Self {
+        Self {
+            max_concurrent_requests: 10,
+            max_concurrent_tools: 5,
+            max_concurrent_sessions: 100,
+        }
+    }
+}
+
+/// Gateway configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GatewayConfig {
+    pub host: String,
+    pub port: u16,
+    pub websocket_path: String,
+    pub http_path: String,
+    pub auth: AuthConfig,
+}
+
+impl Default for GatewayConfig {
+    fn default() -> Self {
+        Self {
+            host: "0.0.0.0".to_string(),
+            port: 3000,
+            websocket_path: "/ws".to_string(),
+            http_path: "/api".to_string(),
+            auth: AuthConfig::default(),
+        }
+    }
+}
+
+/// Authentication configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuthConfig {
+    pub mode: AuthMode,
+    pub token: Option<String>,
+    pub password: Option<String>,
+}
+
+impl Default for AuthConfig {
+    fn default() -> Self {
+        Self {
+            mode: AuthMode::None,
+            token: None,
+            password: None,
+        }
+    }
+}
+
+/// Authentication mode
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum AuthMode {
+    None,
+    Token,
+    Password,
+}
+
+/// Plugin configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PluginConfig {
+    pub name: String,
+    pub version: String,
+    pub enabled: bool,
+    pub path: Option<String>,
     pub config: HashMap<String, serde_json::Value>,
 }
 
-impl Plugin {
-    /// Create a new plugin
-    pub fn new(info: PluginInfo) -> Self {
+impl Default for PluginConfig {
+    fn default() -> Self {
         Self {
-            info,
-            state: PluginState::Unloaded,
+            name: String::new(),
+            version: "1.0.0".to_string(),
+            enabled: true,
+            path: None,
             config: HashMap::new(),
         }
     }
-
-    /// Load the plugin
-    pub fn load(&mut self) -> Result<(), String> {
-        self.state = PluginState::Loaded;
-        Ok(())
-    }
-
-    /// Unload the plugin
-    pub fn unload(&mut self) -> Result<(), String> {
-        self.state = PluginState::Unloaded;
-        Ok(())
-    }
-
-    /// Enable the plugin
-    pub fn enable(&mut self) -> Result<(), String> {
-        self.state = PluginState::Enabled;
-        Ok(())
-    }
-
-    /// Disable the plugin
-    pub fn disable(&mut self) -> Result<(), String> {
-        self.state = PluginState::Disabled;
-        Ok(())
-    }
 }
 
-/// Plugin state
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum PluginState {
-    /// Plugin is unloaded
-    Unloaded,
-    /// Plugin is loaded but not active
-    Loaded,
-    /// Plugin is enabled and active
-    Enabled,
-    /// Plugin is disabled
-    Disabled,
-    /// Plugin has an error
-    Error,
+/// Memory configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MemoryConfig {
+    pub workspace_path: String,
+    pub soul_file: String,
+    pub agents_file: String,
+    pub max_context_tokens: usize,
+    pub enable_long_term_memory: bool,
 }
 
-impl std::fmt::Display for PluginState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Unloaded => write!(f, "unloaded"),
-            Self::Loaded => write!(f, "loaded"),
-            Self::Enabled => write!(f, "enabled"),
-            Self::Disabled => write!(f, "disabled"),
-            Self::Error => write!(f, "error"),
+impl Default for MemoryConfig {
+    fn default() -> Self {
+        Self {
+            workspace_path: ".rustclaw".to_string(),
+            soul_file: "SOUL.md".to_string(),
+            agents_file: "AGENTS.md".to_string(),
+            max_context_tokens: 128000,
+            enable_long_term_memory: true,
         }
     }
+}
+
+/// Logging configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LoggingConfig {
+    pub level: String,
+    pub format: LogFormat,
+    pub file: Option<String>,
+}
+
+impl Default for LoggingConfig {
+    fn default() -> Self {
+        Self {
+            level: "info".to_string(),
+            format: LogFormat::Json,
+            file: None,
+        }
+    }
+}
+
+/// Log format
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum LogFormat {
+    Json,
+    Pretty,
+    Compact,
 }
 
 #[cfg(test)]
@@ -118,19 +315,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_plugin_creation() {
-        let info = PluginInfo {
-            name: "test-plugin".to_string(),
-            version: "1.0.0".to_string(),
-            description: Some("A test plugin".to_string()),
-            author: None,
-            entry: "index.ts".to_string(),
-            plugin_type: PluginType::TypeScript,
-            dependencies: vec![],
-            config_schema: None,
-        };
+    fn test_agent_id_default() {
+        let id = AgentId::default();
+        assert!(!id.0.is_empty());
+    }
 
-        let plugin = Plugin::new(info);
-        assert_eq!(plugin.state, PluginState::Unloaded);
+    #[test]
+    fn test_rate_limit_config_interval() {
+        let config = RateLimitConfig {
+            rpm: Some(60),
+            ..Default::default()
+        };
+        assert_eq!(config.interval_from_rpm(), 1000);
+    }
+
+    #[test]
+    fn test_model_config_default() {
+        let config = ModelConfig::default();
+        assert_eq!(config.provider, LlmProvider::OpenAI);
+        assert_eq!(config.model_name, "gpt-4");
     }
 }
